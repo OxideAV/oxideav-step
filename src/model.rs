@@ -377,8 +377,22 @@ impl<'a> Builder<'a> {
         if self.roots.is_empty() {
             // No product structure: every shape representation that is
             // not part of another's group stands alone.
+            // Representations placed by a mapped item, or the component
+            // side of a transformed relationship, are not roots.
             let reps = self.shape_representations();
             let mut covered: HashSet<u64> = HashSet::new();
+            for inst in self.step.instances.values() {
+                let e = Entity { inst };
+                if e.is_a("REPRESENTATION_MAP") {
+                    if let Some(r) = e.reference("mapped_representation") {
+                        covered.insert(r);
+                    }
+                } else if e.is_a("REPRESENTATION_RELATIONSHIP_WITH_TRANSFORMATION") {
+                    if let Some(r) = e.reference("rep_1") {
+                        covered.insert(r);
+                    }
+                }
+            }
             for r in reps {
                 if covered.contains(&r) {
                     continue;

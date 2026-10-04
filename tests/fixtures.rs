@@ -449,3 +449,41 @@ fn spindle_torus_apple() {
     );
     assert!(m.warnings.is_empty(), "{:?}", m.warnings);
 }
+
+#[test]
+fn representations_without_products() {
+    // The assembly with every product-structure record removed: the
+    // assembly representation stands alone and places its mapped child;
+    // the mapped representation is not repeated as a root.
+    let p = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/assembly.stp");
+    let text = std::fs::read_to_string(p).unwrap();
+    let kept: String = text
+        .lines()
+        .filter(|l| {
+            ![
+                "PRODUCT",
+                "NEXT_ASSEMBLY_USAGE_OCCURRENCE",
+                "SHAPE_DEFINITION_REPRESENTATION",
+                "CONTEXT_DEPENDENT_SHAPE_REPRESENTATION",
+            ]
+            .iter()
+            .any(|k| l.contains(&format!("={k}")))
+        })
+        .map(|l| format!("{l}\n"))
+        .collect();
+    let m = read_step(kept.as_bytes()).unwrap();
+    let mut placed = Vec::new();
+    for r in &m.roots {
+        world_points(&m, r, &Transform::IDENTITY, &mut placed);
+    }
+    // cube (linked by its SRR), the assembly's mapped inch block — and
+    // the transformed cube relationships carry no product, so the cube
+    // representation is the component side (not a root).
+    let names: Vec<&str> = placed.iter().map(|(n, _)| n.as_str()).collect();
+    assert!(names.contains(&"inch_block"), "{names:?}");
+    assert_eq!(
+        names.iter().filter(|n| **n == "inch_block").count(),
+        1,
+        "{names:?}"
+    );
+}
