@@ -45,7 +45,7 @@ fn open_edges(m: &TriMesh) -> usize {
     count.values().filter(|&&c| c != 0).count() / 2
 }
 
-fn summary(name: &str, m: &StepModel) {
+fn summary(name: &str, m: &StepModel) -> usize {
     let tris = m.triangle_count();
     let mut open = 0;
     let mut vol = 0.0;
@@ -65,6 +65,7 @@ fn summary(name: &str, m: &StepModel) {
     for w in m.warnings.iter().take(10) {
         eprintln!("  warning: {w}");
     }
+    open
 }
 
 #[test]
@@ -84,8 +85,16 @@ fn nist_models_read() {
         };
         let t = std::time::Instant::now();
         let m = read_step(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
-        summary(name, &m);
+        let open = summary(name, &m);
         eprintln!("  {:?}", t.elapsed());
         assert!(m.triangle_count() > 0, "{name}");
+        // Every NIST solid is a closed B-rep (or a closed tessellated
+        // solid): the meshes must be watertight.
+        assert_eq!(open, 0, "{name}: open edges");
+        assert!(
+            m.warnings.iter().all(|w| w.contains("GEOMETRIC_CURVE_SET")),
+            "{name}: {:?}",
+            m.warnings
+        );
     }
 }
