@@ -62,7 +62,8 @@ pub mod encoder;
 pub use error::{Error, Result};
 pub use geom::{GeometryLimits, Tolerance};
 pub use model::{
-    model_from_file, read_step, read_step_with, Occurrence, Part, ReadOptions, Shape, StepModel,
+    model_from_file, read_step, read_step_with, Occurrence, OccurrenceColour, Part, ReadOptions,
+    Shape, StepModel,
 };
 pub use oxideav_ifc::{Header, StepFile, StepLimits, Transform, TriMesh};
 pub use schema::ApSchema;

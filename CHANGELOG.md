@@ -41,3 +41,6 @@ All notable changes to this project will be documented in this file.
   under `"step"` for `.step` / `.stp` / `.p21`), round-trip tested.
 - Shell-level colours, per-face vertex split + normals in the scene,
   `DEGENERATE_TOROIDAL_SURFACE`, STEP-worded warnings.
+- Context-dependent over-riding colours (`StepModel::occurrence_colours`,
+  `Occurrence::placed_by`): applied per occurrence in the scene through
+  mesh variants.

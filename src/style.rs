@@ -48,6 +48,11 @@ pub struct Styles {
     pub hidden: HashSet<u64>,
     /// Item id → names of the presentation layers it is assigned to.
     pub layers: HashMap<u64, Vec<String>>,
+    /// Context-dependent over-riding colours: `(item, style context,
+    /// colour)` — the colour applies to the item only in the assembly
+    /// occurrence the context (a chain of representation relationships
+    /// / mapped items) identifies.
+    pub contextual: Vec<(u64, Vec<u64>, Rgba)>,
 }
 
 const MAX_STYLE_DEPTH: usize = 12;
@@ -88,7 +93,22 @@ impl Styles {
                 }
                 continue;
             }
-            if !e.is_a("STYLED_ITEM") || e.is_a("CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM") {
+            if e.is_a("CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM") {
+                let (Some(item), Some(rgba)) = (e.reference("item"), styled_colour(step, e)) else {
+                    continue;
+                };
+                let context: Vec<u64> = e
+                    .list("style_context")
+                    .unwrap_or(&[])
+                    .iter()
+                    .filter_map(Value::as_reference)
+                    .collect();
+                if !context.is_empty() {
+                    out.contextual.push((item, context, rgba));
+                }
+                continue;
+            }
+            if !e.is_a("STYLED_ITEM") {
                 continue;
             }
             let Some(item) = e.reference("item") else {

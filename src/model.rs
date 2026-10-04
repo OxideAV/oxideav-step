@@ -87,6 +87,24 @@ pub struct Occurrence {
     pub name: Option<String>,
     /// Child frame → parent frame (model length units).
     pub transform: Transform,
+    /// The instance placing it: the representation relationship of an
+    /// assembly usage, or the mapped item — the element a
+    /// context-dependent style's context path names.
+    pub placed_by: Option<u64>,
+}
+
+/// A colour that applies to an item only in one assembly occurrence
+/// (`context_dependent_over_riding_styled_item`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct OccurrenceColour {
+    /// The occurrence path from the root down: per level the
+    /// [`Occurrence::placed_by`] relationship / mapped item or the
+    /// [`Occurrence::id`] usage (matched as a set).
+    pub path: Vec<u64>,
+    /// The styled item (a shape item or a face).
+    pub item: u64,
+    /// The colour.
+    pub colour: Rgba,
 }
 
 /// A product definition (or a stand-alone representation) with its
@@ -120,6 +138,8 @@ pub struct StepModel {
     pub parts: Vec<Part>,
     /// Top-level occurrences.
     pub roots: Vec<Occurrence>,
+    /// Per-occurrence colour overrides.
+    pub occurrence_colours: Vec<OccurrenceColour>,
     /// Non-fatal problems met while reading.
     pub warnings: Vec<String>,
 }
@@ -171,6 +191,16 @@ pub fn model_from_file(step: &StepFile, opts: &ReadOptions) -> Result<StepModel>
         length_unit_metres: b.unit_metres,
         parts: b.parts,
         roots,
+        occurrence_colours: b
+            .styles
+            .contextual
+            .iter()
+            .map(|(item, path, colour)| OccurrenceColour {
+                path: path.clone(),
+                item: *item,
+                colour: *colour,
+            })
+            .collect(),
         warnings,
     })
 }
@@ -371,6 +401,7 @@ impl<'a> Builder<'a> {
                     id: None,
                     name: None,
                     transform: Transform::IDENTITY,
+                    placed_by: None,
                 });
             }
         }
@@ -407,6 +438,7 @@ impl<'a> Builder<'a> {
                         id: None,
                         name: None,
                         transform: Transform::IDENTITY,
+                        placed_by: None,
                     });
                 }
             }
@@ -509,7 +541,8 @@ impl<'a> Builder<'a> {
             for (usage, child) in usages {
                 let child_reps =
                     self.rep_group(&self.reps_of_pd.get(&child).cloned().unwrap_or_default());
-                let transform = match self.cdsr.get(&usage).copied() {
+                let placed_by = self.cdsr.get(&usage).copied();
+                let transform = match placed_by {
                     Some(rel) => match self.usage_transform(rel, &reps, &child_reps) {
                         Some(t) => t,
                         None => {
@@ -542,6 +575,7 @@ impl<'a> Builder<'a> {
                     id: Some(usage),
                     name,
                     transform,
+                    placed_by,
                 });
             }
         }
@@ -697,6 +731,7 @@ impl<'a> Builder<'a> {
                 id: Some(item),
                 name,
                 transform,
+                placed_by: Some(item),
             },
             child_rep,
         )))

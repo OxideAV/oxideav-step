@@ -111,3 +111,42 @@ fn ap242_tessellated_round_trip() {
         assert!(model.warnings.is_empty(), "{name}: {:?}", model.warnings);
     }
 }
+
+#[test]
+fn context_dependent_colour_overrides_one_occurrence() {
+    let text = String::from_utf8(bytes("assembly.stp")).unwrap();
+    let id_of = |pred: &dyn Fn(&str) -> bool, nth: usize| -> String {
+        let line = text.lines().filter(|l| pred(l)).nth(nth).unwrap();
+        line.split('=').next().unwrap().to_string()
+    };
+    let solid = id_of(&|l| l.contains("=MANIFOLD_SOLID_BREP('cube'"), 0);
+    let base = id_of(&|l| l.contains("=STYLED_ITEM("), 0);
+    let rel2 = id_of(
+        &|l| l.contains("REPRESENTATION_RELATIONSHIP_WITH_TRANSFORMATION"),
+        1,
+    );
+    let extra = format!(
+        "#9001=COLOUR_RGB('',0.,0.,1.);\n#9002=FILL_AREA_STYLE_COLOUR('',#9001);\n\
+         #9003=FILL_AREA_STYLE('',(#9002));\n#9004=SURFACE_STYLE_FILL_AREA(#9003);\n\
+         #9005=SURFACE_SIDE_STYLE('',(#9004));\n#9006=SURFACE_STYLE_USAGE(.BOTH.,#9005);\n\
+         #9007=PRESENTATION_STYLE_ASSIGNMENT((#9006));\n\
+         #9008=CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM('',(#9007),{solid},{base},({rel2}));\nENDSEC;"
+    );
+    let text = text.replacen("ENDSEC;\nEND-ISO", &format!("{extra}\nEND-ISO"), 1);
+    let model = oxideav_step::read_step(text.as_bytes()).unwrap();
+    assert_eq!(model.occurrence_colours.len(), 1);
+    let scene = oxideav_step::scene_from_model(&model);
+    // Base cube mesh (green), a blue variant for the second occurrence,
+    // and the inch block.
+    assert_eq!(scene.meshes.len(), 3);
+    let root = scene.node(scene.roots[0]).unwrap();
+    let colours: Vec<[f32; 4]> = root
+        .children
+        .iter()
+        .filter_map(|&c| scene.node(c).unwrap().mesh)
+        .filter_map(|m| scene.meshes[m.0 as usize].primitives[0].material)
+        .map(|m| scene.materials[m.0 as usize].base_color)
+        .collect();
+    assert!(colours.contains(&[0.2, 0.7, 0.2, 1.0]), "{colours:?}");
+    assert!(colours.contains(&[0.0, 0.0, 1.0, 1.0]), "{colours:?}");
+}

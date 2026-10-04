@@ -109,68 +109,31 @@ pub fn scene_from_model(model: &StepModel) -> Scene3D {
         serde_json::Number::from_f64(model.length_unit_metres).map_or(Json::Null, Json::Number),
     );
 
-    let mut materials: HashMap<[u32; 4], MaterialId> = HashMap::new();
-    let mut mesh_of_part: Vec<Option<MeshId>> = Vec::with_capacity(model.parts.len());
-    for part in &model.parts {
-        if part.shapes.is_empty() {
-            mesh_of_part.push(None);
-            continue;
-        }
-        let mut mesh = Mesh::new(part.name.clone());
-        for shape in &part.shapes {
-            for (colour, prim) in split_by_colour(shape, factor) {
-                let mut prim = prim;
-                if let Some(c) = colour {
-                    let key = [
-                        c[0].to_bits(),
-                        c[1].to_bits(),
-                        c[2].to_bits(),
-                        c[3].to_bits(),
-                    ];
-                    let id = *materials.entry(key).or_insert_with(|| {
-                        let mut m = Material::new().with_base_color(c);
-                        m.metallic = 0.0;
-                        m.roughness = 0.5;
-                        if c[3] < 1.0 {
-                            m.alpha_mode = AlphaMode::Blend;
-                        }
-                        scene.add_material(m)
-                    });
-                    prim.material = Some(id);
-                }
-                if let Some(n) = &shape.name {
-                    prim.extras
-                        .insert("step:name".into(), Json::String(n.clone()));
-                }
-                prim.extras
-                    .insert("step:item".into(), Json::Number(shape.item.into()));
-                if !shape.layers.is_empty() {
-                    prim.extras.insert(
-                        "step:layers".into(),
-                        Json::Array(shape.layers.iter().cloned().map(Json::String).collect()),
-                    );
-                }
-                mesh.primitives.push(prim);
-            }
-        }
-        mesh_of_part.push(Some(scene.add_mesh(mesh)));
+    let mut b = SceneBuilder {
+        model,
+        factor,
+        scene,
+        materials: HashMap::new(),
+        base: Vec::with_capacity(model.parts.len()),
+        variants: HashMap::new(),
+        count: 0,
+    };
+    for i in 0..model.parts.len() {
+        let id = b.build_mesh(i, &[]);
+        b.base.push(id);
     }
-
     // Expand the occurrence DAG into nodes (cycle-safe, bounded).
-    let mut stack_path: Vec<usize> = Vec::new();
-    let mut count = 0usize;
+    let mut parts_path: Vec<usize> = Vec::new();
+    let mut occ_path: Vec<[u64; 2]> = Vec::new();
+    let mut roots = Vec::new();
     for occ in &model.roots {
-        if let Some(id) = expand(
-            model,
-            &mesh_of_part,
-            occ,
-            factor,
-            &mut scene,
-            &mut stack_path,
-            &mut count,
-        ) {
-            scene.add_root(id);
+        if let Some(id) = b.expand(occ, &mut parts_path, &mut occ_path) {
+            roots.push(id);
         }
+    }
+    let mut scene = b.scene;
+    for r in roots {
+        scene.add_root(r);
     }
     scene
 }
@@ -201,54 +164,199 @@ fn matrix(t: &oxideav_ifc::Transform, factor: f64) -> [[f32; 4]; 4] {
     ]
 }
 
-fn expand(
-    model: &StepModel,
-    meshes: &[Option<MeshId>],
-    occ: &crate::model::Occurrence,
+/// A colour override for one item: `(item id, colour)`.
+type Override = (u64, Rgba);
+
+/// A mesh variant key: the part and its overrides (colours as bits).
+type VariantKey = (usize, Vec<(u64, [u32; 4])>);
+
+struct SceneBuilder<'m> {
+    model: &'m StepModel,
     factor: f64,
-    scene: &mut Scene3D,
-    path: &mut Vec<usize>,
-    count: &mut usize,
-) -> Option<NodeId> {
-    if path.contains(&occ.part) || *count >= MAX_NODES || path.len() > 256 {
-        return None;
+    scene: Scene3D,
+    materials: HashMap<[u32; 4], MaterialId>,
+    /// Each part's mesh with its own colours.
+    base: Vec<Option<MeshId>>,
+    /// Per-occurrence colour variants: (part, overrides) → mesh.
+    variants: HashMap<VariantKey, Option<MeshId>>,
+    count: usize,
+}
+
+fn colour_key(c: Rgba) -> [u32; 4] {
+    [
+        c[0].to_bits(),
+        c[1].to_bits(),
+        c[2].to_bits(),
+        c[3].to_bits(),
+    ]
+}
+
+impl SceneBuilder<'_> {
+    fn material(&mut self, c: Rgba) -> MaterialId {
+        let scene = &mut self.scene;
+        *self.materials.entry(colour_key(c)).or_insert_with(|| {
+            let mut m = Material::new().with_base_color(c);
+            m.metallic = 0.0;
+            m.roughness = 0.5;
+            if c[3] < 1.0 {
+                m.alpha_mode = AlphaMode::Blend;
+            }
+            scene.add_material(m)
+        })
     }
-    let part = model.parts.get(occ.part)?;
-    *count += 1;
-    let mut node = Node::new();
-    node.name = occ.name.clone().or_else(|| part.name.clone());
-    if occ.transform != oxideav_ifc::Transform::IDENTITY {
-        node.transform = NodeTransform::Matrix(matrix(&occ.transform, factor));
-    }
-    node.mesh = meshes.get(occ.part).copied().flatten();
-    if let Some(pid) = &part.product_id {
-        node.extras
-            .insert("step:product_id".into(), Json::String(pid.clone()));
-    }
-    if let Some(d) = part.definition {
-        node.extras
-            .insert("step:product_definition".into(), Json::Number(d.into()));
-    }
-    if let Some(id) = occ.id {
-        node.extras
-            .insert("step:occurrence".into(), Json::Number(id.into()));
-    }
-    path.push(occ.part);
-    let mut children = Vec::new();
-    for c in &part.children {
-        if let Some(id) = expand(model, meshes, c, factor, scene, path, count) {
-            children.push(id);
+
+    /// The mesh of part `i` with `overrides` applied (an override on a
+    /// shape item recolours the whole item, one on a face that face).
+    fn build_mesh(&mut self, i: usize, overrides: &[Override]) -> Option<MeshId> {
+        let part = self.model.parts.get(i)?;
+        if part.shapes.is_empty() {
+            return None;
         }
+        let mut mesh = Mesh::new(part.name.clone());
+        for shape in &part.shapes {
+            for (colour, mut prim) in split_by_colour(shape, self.factor, overrides) {
+                if let Some(c) = colour {
+                    prim.material = Some(self.material(c));
+                }
+                if let Some(n) = &shape.name {
+                    prim.extras
+                        .insert("step:name".into(), Json::String(n.clone()));
+                }
+                prim.extras
+                    .insert("step:item".into(), Json::Number(shape.item.into()));
+                if !shape.layers.is_empty() {
+                    prim.extras.insert(
+                        "step:layers".into(),
+                        Json::Array(shape.layers.iter().cloned().map(Json::String).collect()),
+                    );
+                }
+                mesh.primitives.push(prim);
+            }
+        }
+        Some(self.scene.add_mesh(mesh))
     }
-    path.pop();
-    node.children = children;
-    Some(scene.add_node(node))
+
+    /// The overrides that apply to part `i` at occurrence path `path`
+    /// (per level: the placing relationship / mapped item and the usage
+    /// id; a style context may name either).
+    fn overrides_for(&self, i: usize, path: &[[u64; 2]]) -> Vec<Override> {
+        let Some(part) = self.model.parts.get(i) else {
+            return Vec::new();
+        };
+        let mut out: Vec<Override> = Vec::new();
+        for oc in &self.model.occurrence_colours {
+            let same_path = oc.path.len() == path.len()
+                && path
+                    .iter()
+                    .all(|level| oc.path.iter().any(|p| level.contains(p)));
+            if !same_path {
+                continue;
+            }
+            let applies = part
+                .shapes
+                .iter()
+                .any(|s| s.item == oc.item || s.triangle_faces.contains(&oc.item));
+            if applies {
+                out.push((oc.item, oc.colour));
+            }
+        }
+        out
+    }
+
+    fn mesh_for(&mut self, i: usize, path: &[[u64; 2]]) -> Option<MeshId> {
+        let overrides = self.overrides_for(i, path);
+        if overrides.is_empty() {
+            return self.base.get(i).copied().flatten();
+        }
+        let key = (
+            i,
+            overrides
+                .iter()
+                .map(|&(item, c)| (item, colour_key(c)))
+                .collect::<Vec<_>>(),
+        );
+        if let Some(m) = self.variants.get(&key) {
+            return *m;
+        }
+        let m = self.build_mesh(i, &overrides);
+        self.variants.insert(key, m);
+        m
+    }
+
+    fn expand(
+        &mut self,
+        occ: &crate::model::Occurrence,
+        parts_path: &mut Vec<usize>,
+        occ_path: &mut Vec<[u64; 2]>,
+    ) -> Option<NodeId> {
+        if parts_path.contains(&occ.part) || self.count >= MAX_NODES || parts_path.len() > 256 {
+            return None;
+        }
+        let model = self.model;
+        let part = model.parts.get(occ.part)?;
+        self.count += 1;
+        let mut node = Node::new();
+        node.name = occ.name.clone().or_else(|| part.name.clone());
+        if occ.transform != oxideav_ifc::Transform::IDENTITY {
+            node.transform = NodeTransform::Matrix(matrix(&occ.transform, self.factor));
+        }
+        let level = occ.placed_by.is_some() || occ.id.is_some();
+        if level {
+            let p = occ.placed_by.unwrap_or(u64::MAX);
+            occ_path.push([p, occ.id.unwrap_or(p)]);
+        }
+        node.mesh = self.mesh_for(occ.part, occ_path);
+        if let Some(pid) = &part.product_id {
+            node.extras
+                .insert("step:product_id".into(), Json::String(pid.clone()));
+        }
+        if let Some(d) = part.definition {
+            node.extras
+                .insert("step:product_definition".into(), Json::Number(d.into()));
+        }
+        if let Some(id) = occ.id {
+            node.extras
+                .insert("step:occurrence".into(), Json::Number(id.into()));
+        }
+        parts_path.push(occ.part);
+        let mut children = Vec::new();
+        for c in &part.children {
+            if let Some(id) = self.expand(c, parts_path, occ_path) {
+                children.push(id);
+            }
+        }
+        parts_path.pop();
+        if level {
+            occ_path.pop();
+        }
+        node.children = children;
+        Some(self.scene.add_node(node))
+    }
 }
 
 /// One primitive per colour group of a shape.
-fn split_by_colour(shape: &crate::model::Shape, factor: f64) -> Vec<(Option<Rgba>, Primitive)> {
+fn split_by_colour(
+    shape: &crate::model::Shape,
+    factor: f64,
+    overrides: &[Override],
+) -> Vec<(Option<Rgba>, Primitive)> {
     let mesh = &shape.mesh;
+    let whole = overrides
+        .iter()
+        .find(|(item, _)| *item == shape.item)
+        .map(|&(_, c)| c);
     let colour_at = |i: usize| -> Option<Rgba> {
+        let face = shape.triangle_faces.get(i).copied();
+        if let Some(c) = overrides
+            .iter()
+            .find(|(item, _)| Some(*item) == face)
+            .map(|&(_, c)| c)
+        {
+            return Some(c);
+        }
+        if whole.is_some() {
+            return whole;
+        }
         shape
             .triangle_colours
             .get(i)

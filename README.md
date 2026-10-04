@@ -26,15 +26,14 @@ parameter domain).
 | Curves | `LINE`, `CIRCLE`, `ELLIPSE`, `HYPERBOLA`, `PARABOLA`, `POLYLINE`, `B_SPLINE_CURVE_WITH_KNOTS` (+ uniform / quasi-uniform / Bézier, rational), `TRIMMED_CURVE`, `COMPOSITE_CURVE`, `SURFACE_CURVE` / `SEAM_CURVE` / `INTERSECTION_CURVE`, `PCURVE`, `OFFSET_CURVE_3D` |
 | Tessellation | every edge sampled once and shared by both faces (watertight solids); faces trimmed in the surface `(u, v)` domain (seams, poles, cone apices); chordal-tolerance + angular density (`Tolerance`) |
 | AP242 tessellated | `TESSELLATED_SHAPE_REPRESENTATION`, `TESSELLATED_SOLID` / `TESSELLATED_SHELL`, `TRIANGULATED_FACE`, `COMPLEX_TRIANGULATED_FACE`, `TRIANGULATED_SURFACE_SET`, `COMPLEX_TRIANGULATED_SURFACE_SET`, `COORDINATES_LIST` |
-| Presentation | `STYLED_ITEM` / `OVER_RIDING_STYLED_ITEM` → `PRESENTATION_STYLE_ASSIGNMENT` → `SURFACE_STYLE_USAGE` → `SURFACE_SIDE_STYLE` → fill-area colour or `SURFACE_STYLE_RENDERING(_WITH_PROPERTIES)` + `SURFACE_STYLE_TRANSPARENT`; `COLOUR_RGB`, `DRAUGHTING_PRE_DEFINED_COLOUR`; solid / shell / face / representation targets; `INVISIBILITY`; layer names |
+| Presentation | `STYLED_ITEM` / `OVER_RIDING_STYLED_ITEM` → `PRESENTATION_STYLE_ASSIGNMENT` → `SURFACE_STYLE_USAGE` → `SURFACE_SIDE_STYLE` → fill-area colour or `SURFACE_STYLE_RENDERING(_WITH_PROPERTIES)` + `SURFACE_STYLE_TRANSPARENT`; `COLOUR_RGB`, `DRAUGHTING_PRE_DEFINED_COLOUR`; solid / shell / face / representation targets; `CONTEXT_DEPENDENT_OVER_RIDING_STYLED_ITEM` per-occurrence colours (scene mesh variants); `INVISIBILITY`; layer names |
 | Scene3D | one mesh per part (shared by occurrences), one primitive per colour, vertices split per face with smooth-within-face normals, deduplicated materials, occurrence nodes with matrices, `unit` (mm / cm / m / in / ft / yd, else metres), Z-up |
 
 | Writer | `StepEncoder` / `encode_scene` (`registry`): a `Scene3D` as AP242 tessellated geometry — `TRIANGULATED_SURFACE_SET` per primitive, one product per mesh instanced through an assembly (`NEXT_ASSEMBLY_USAGE_OCCURRENCE` + `ITEM_DEFINED_TRANSFORMATION`; non-rigid node transforms baked), colours / transparency, length unit |
 
 Not yet: PMI (semantic / graphical annotations), wireframe-only
 geometry (`GEOMETRIC_CURVE_SET`), CSG / swept solid primitives,
-context-dependent (per-occurrence) over-riding styles, exact-B-rep
-export.
+exact-B-rep export.
 
 ## Usage
 
