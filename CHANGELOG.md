@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.1](https://github.com/OxideAV/oxideav-step/compare/v0.0.0...v0.0.1) - 2026-10-04
+
+### Other
+
+- normalise CRLF before splicing the assembly fixture (Windows checkout)
+- release v0.0.0 ([#1](https://github.com/OxideAV/oxideav-step/pull/1))
+- context-dependent over-riding colours per assembly occurrence
+- representation-only files skip mapped / component representations as roots
+- clippy (type alias, entry API)
+- Scene3D → AP242 tessellated STEP
+- keep the test module last (clippy items_after_test_module)
+- STEP-worded geometry error descriptions
+- degenerate toroidal surfaces; seamed sphere / spindle-torus fixtures; clearer no-geometry error
+- per-face vertex split with area-weighted normals (hard CAD edges)
+- a colour on a solid's shell (or a surface model's shells) applies to the item
+- fuzz target + workflow; fixtures for revolution, extrusion, sphere, trimmed arcs, offset, NURBS circles, voids, faceted, nested assembly
+- cone density from the face extent; planar outer loop by area; NIST models watertight
+- STEP AP203/AP214/AP242 reader: schema typing, units, product structure, B-rep + tessellated geometry, styles, Scene3D
+
 ## [0.0.0](https://github.com/OxideAV/oxideav-step/releases/tag/v0.0.0) - 2026-10-04
 
 ### Other
