@@ -3,8 +3,8 @@
 //!
 //! * elementary: `plane`, `cylindrical_surface`, `conical_surface`
 //!   (`semi_angle` in the context's angle unit), `spherical_surface`,
-//!   `toroidal_surface` (`degenerate_toroidal_surface` when its minor
-//!   radius is the smaller);
+//!   `toroidal_surface`, `degenerate_toroidal_surface` (a spindle torus:
+//!   the face loops pick the apple or the lemon);
 //! * `b_spline_surface` (with knots / uniform / quasi-uniform / Bézier,
 //!   rational through the complex-instance `weights_data`);
 //! * swept: `surface_of_linear_extrusion`, `surface_of_revolution` —
@@ -56,9 +56,7 @@ pub(super) fn resolve(geo: &mut Geo<'_>, id: u64, depth: usize) -> GResult<Surfa
             if minor < major {
                 return Surface::torus(frame, major, minor);
             }
-            return Err(GeometryError::Unsupported(
-                "DEGENERATE_TOROIDAL_SURFACE (minor ≥ major radius)".into(),
-            ));
+            return Surface::degenerate_torus(frame, major, minor);
         }
         return Err(GeometryError::Unsupported(e.inst.keyword.clone()));
     }

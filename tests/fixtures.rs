@@ -410,3 +410,42 @@ fn colour_on_the_shell_applies_to_the_solid() {
     let m = read_step(text.as_bytes()).unwrap();
     assert_eq!(single_shape(&m).colour, Some([0.8, 0.2, 0.2, 1.0]));
 }
+
+#[test]
+fn sphere_bounded_by_a_seam_through_the_poles() {
+    let m = load("sphere_seam.stp");
+    let s = single_shape(&m);
+    assert_eq!(open_edges(&s.mesh), 0);
+    let v = 4.0 / 3.0 * core::f64::consts::PI * 27.0;
+    assert!(
+        close(s.mesh.signed_volume(), v, 0.01),
+        "{}",
+        s.mesh.signed_volume()
+    );
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+}
+
+#[test]
+fn spindle_torus_apple() {
+    let m = load("spindle_torus.stp");
+    let s = single_shape(&m);
+    assert_eq!(open_edges(&s.mesh), 0);
+    // The apple is the tube's outer part, dimpled at the axis points
+    // (z = ±√3): V = ∫ π (x_out² − x_in²) dz over |z| ≤ 2 with
+    // x = 1 ± √(4 − z²) and x_in clamped at the axis.
+    let n = 40_000;
+    let exact: f64 = (0..n)
+        .map(|i| {
+            let z = -2.0 + 4.0 * (i as f64 + 0.5) / n as f64;
+            let w = (4.0 - z * z).max(0.0).sqrt();
+            let (xo, xi) = (1.0 + w, (1.0 - w).max(0.0));
+            core::f64::consts::PI * (xo * xo - xi * xi) * 4.0 / n as f64
+        })
+        .sum();
+    assert!(
+        close(s.mesh.signed_volume(), exact, 0.01),
+        "{} vs {exact}",
+        s.mesh.signed_volume()
+    );
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+}

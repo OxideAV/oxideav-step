@@ -153,10 +153,13 @@ pub fn model_from_file(step: &StepFile, opts: &ReadOptions) -> Result<StepModel>
     b.build()?;
     let roots = std::mem::take(&mut b.roots);
     if b.parts.iter().all(|p| p.shapes.is_empty()) {
-        return Err(Error::NoGeometry(match b.unsupported.iter().next() {
-            Some(kw) => format!("only unsupported representation items (e.g. `{kw}`)"),
-            None => "no shape representation with geometry".into(),
-        }));
+        return Err(Error::NoGeometry(
+            match (b.unsupported.iter().next(), b.warnings.first()) {
+                (Some(kw), _) => format!("only unsupported representation items (e.g. `{kw}`)"),
+                (None, Some(w)) => format!("no item could be meshed (first problem: {w})"),
+                (None, None) => "no shape representation with geometry".into(),
+            },
+        ));
     }
     let mut warnings = b.warnings;
     for kw in &b.unsupported {
