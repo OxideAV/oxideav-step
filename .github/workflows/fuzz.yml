@@ -1,0 +1,20 @@
+name: Fuzz
+
+# Daily fuzz run for the cargo-fuzz harnesses under fuzz/. The shared
+# workflow auto-discovers the targets from fuzz/fuzz_targets/*.rs and
+# splits the 30-minute total budget evenly across them. Current
+# target: read_step (an arbitrary byte string through the whole reader —
+# physical-file parser, EXPRESS typing, product structure, B-rep and
+# tessellated geometry meshing, styling).
+
+on:
+  schedule:
+    - cron: "17 5 * * *"   # daily 05:17 UTC, jittered off the hour
+  workflow_dispatch:
+
+jobs:
+  fuzz:
+    uses: OxideAV/.github/.github/workflows/crate-fuzz.yml@master
+    with:
+      time_budget_seconds: 1800
+    secrets: inherit

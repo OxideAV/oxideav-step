@@ -30,3 +30,10 @@ All notable changes to this project will be documented in this file.
   `scene_from_model`, `make_decoder`, `register_mesh3d` (`.step` /
   `.stp` / `.p21`): instanced part meshes, per-colour primitives,
   occurrence nodes, units, Z-up.
+- `fuzz/` cargo-fuzz target `read_step` (whole reader on hostile bytes,
+  fixtures as seeds) and the daily Fuzz workflow.
+- Fixtures: surface of revolution of a B-spline profile, sphere from
+  hemispheres, elliptic linear extrusion, degree-unit trimmed arcs, NURBS
+  circle edges on an offset surface, `BREP_WITH_VOIDS`, faceted brep +
+  open shell, nested assembly (parent-first relationship, cartesian-
+  operator mapped item) — all watertight with exact volumes.

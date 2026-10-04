@@ -260,3 +260,132 @@ fn tessellated_geometry() {
         assert!(n > 0.0, "{t:?}");
     }
 }
+
+fn shapes(m: &StepModel) -> Vec<&oxideav_step::Shape> {
+    m.parts.iter().flat_map(|p| &p.shapes).collect()
+}
+
+fn named<'a>(m: &'a StepModel, name: &str) -> &'a oxideav_step::Shape {
+    shapes(m)
+        .into_iter()
+        .find(|s| s.name.as_deref() == Some(name))
+        .unwrap_or_else(|| panic!("no shape {name}"))
+}
+
+#[test]
+fn surface_of_revolution_vase() {
+    let m = load("revolved.stp");
+    let s = single_shape(&m);
+    assert_eq!(open_edges(&s.mesh), 0);
+    // V = ∫ π r(t)² z'(t) dt over the cubic Bézier profile.
+    let (rx, rz) = ([3.0, 5.0, 1.0, 2.0], [0.0, 1.5, 3.5, 5.0]);
+    let bez = |p: [f64; 4], t: f64| {
+        let u = 1.0 - t;
+        u * u * u * p[0] + 3.0 * u * u * t * p[1] + 3.0 * u * t * t * p[2] + t * t * t * p[3]
+    };
+    let n = 20_000;
+    let mut exact = 0.0;
+    for i in 0..n {
+        let (t0, t1) = (i as f64 / n as f64, (i + 1) as f64 / n as f64);
+        let r = bez(rx, 0.5 * (t0 + t1));
+        exact += core::f64::consts::PI * r * r * (bez(rz, t1) - bez(rz, t0));
+    }
+    assert!(
+        close(s.mesh.signed_volume(), exact, 0.01),
+        "{} vs {exact}",
+        s.mesh.signed_volume()
+    );
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+}
+
+#[test]
+fn sphere_and_extruded_ellipse() {
+    let m = load("sphere_prism.stp");
+    let sphere = named(&m, "sphere");
+    assert_eq!(open_edges(&sphere.mesh), 0);
+    let v = 4.0 / 3.0 * core::f64::consts::PI * 64.0;
+    assert!(
+        close(sphere.mesh.signed_volume(), v, 0.01),
+        "{}",
+        sphere.mesh.signed_volume()
+    );
+    let prism = named(&m, "prism");
+    assert_eq!(open_edges(&prism.mesh), 0);
+    let v = core::f64::consts::PI * 3.0 * 2.0 * 6.0;
+    assert!(
+        close(prism.mesh.signed_volume(), v, 0.01),
+        "{}",
+        prism.mesh.signed_volume()
+    );
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+}
+
+#[test]
+fn degree_trimmed_arcs_offset_surface_nurbs_circles_and_voids() {
+    let m = load("trimmed_offset_voids.stp");
+    let half = named(&m, "half_disc");
+    assert_eq!(open_edges(&half.mesh), 0);
+    let v = 0.5 * core::f64::consts::PI * 25.0 * 3.0;
+    assert!(
+        close(half.mesh.signed_volume(), v, 0.01),
+        "{}",
+        half.mesh.signed_volume()
+    );
+    // The arc bulges towards +y (0° → 180° counter-clockwise).
+    assert!(half.mesh.positions.iter().all(|p| p[1] >= -1e-9));
+    let nc = named(&m, "nurbs_cylinder");
+    assert_eq!(open_edges(&nc.mesh), 0);
+    let v = core::f64::consts::PI * 25.0 * 4.0;
+    assert!(
+        close(nc.mesh.signed_volume(), v, 0.01),
+        "{}",
+        nc.mesh.signed_volume()
+    );
+    let hollow = named(&m, "hollow");
+    assert_eq!(open_edges(&hollow.mesh), 0);
+    assert!(
+        close(hollow.mesh.signed_volume(), 1000.0 - 216.0, 1e-9),
+        "{}",
+        hollow.mesh.signed_volume()
+    );
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+}
+
+#[test]
+fn faceted_brep_and_open_shell() {
+    let m = load("faceted.stp");
+    let cube = named(&m, "cube");
+    assert_eq!(cube.mesh.triangles.len(), 12);
+    assert_eq!(open_edges(&cube.mesh), 0);
+    assert!(close(cube.mesh.signed_volume(), 64.0, 1e-12));
+    let sheet = named(&m, "sheet");
+    assert_eq!(sheet.mesh.triangles.len(), 2);
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+}
+
+#[test]
+fn nested_assembly_placements() {
+    let m = load("assembly_nested.stp");
+    assert_eq!(m.roots.len(), 1);
+    let mut placed = Vec::new();
+    world_points(&m, &m.roots[0], &Transform::IDENTITY, &mut placed);
+    let boxes: Vec<Bounds> = placed.iter().map(|(_, p)| bbox(p)).collect();
+    assert_eq!(boxes.len(), 2, "{boxes:?}");
+    let near = |a: [f64; 3], b: [f64; 3]| (0..3).all(|k| (a[k] - b[k]).abs() < 1e-6);
+    // Sub A: the cube at (10,0,0) inside the sub, the sub rotated 180°
+    // about z and lifted to z = 100.
+    assert!(
+        boxes
+            .iter()
+            .any(|b| near(b.0, [-12.0, -2.0, 100.0]) && near(b.1, [-10.0, 0.0, 102.0])),
+        "{boxes:?}"
+    );
+    // Sub B: mapped by the cartesian operator (x → y, y → −x, +50 in y).
+    assert!(
+        boxes
+            .iter()
+            .any(|b| near(b.0, [-2.0, 60.0, 0.0]) && near(b.1, [0.0, 62.0, 2.0])),
+        "{boxes:?}"
+    );
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+}
