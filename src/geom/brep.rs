@@ -184,7 +184,8 @@ impl<'g, 'a> BrepMesher<'g, 'a> {
             };
             self.budget()?;
             if let Err(err) = self.face(fid, flip, 0) {
-                self.warnings.push(format!("face #{fid} skipped: {err}"));
+                self.warnings
+                    .push(format!("face #{fid} skipped: {}", super::describe(&err)));
             }
         }
         Ok(())
@@ -234,8 +235,10 @@ impl<'g, 'a> BrepMesher<'g, 'a> {
                 }
                 Ok(None) => {}
                 Err(err) => {
-                    self.warnings
-                        .push(format!("face #{id}: loop #{lid} skipped: {err}"));
+                    self.warnings.push(format!(
+                        "face #{id}: loop #{lid} skipped: {}",
+                        super::describe(&err)
+                    ));
                 }
             }
         }

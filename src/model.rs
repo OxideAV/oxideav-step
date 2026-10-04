@@ -658,10 +658,10 @@ impl<'a> Builder<'a> {
         );
         let mo = geo
             .placement(origin)
-            .map_err(|e| Error::NoGeometry(e.to_string()))?;
+            .map_err(|e| Error::NoGeometry(crate::geom::describe(&e)))?;
         let mt = geo
             .placement(target)
-            .map_err(|e| Error::NoGeometry(e.to_string()))?;
+            .map_err(|e| Error::NoGeometry(crate::geom::describe(&e)))?;
         let mo = rescale_translation(&mo, fc);
         let mt = rescale_translation(&mt, fp);
         let Some(inv) = invert(&mo) else {
@@ -752,7 +752,8 @@ impl<'a> Builder<'a> {
             let bm = match meshed {
                 Ok(m) => m,
                 Err(err) => {
-                    self.warnings.push(format!("item #{item}: {err}"));
+                    self.warnings
+                        .push(format!("item #{item}: {}", crate::geom::describe(&err)));
                     continue;
                 }
             };

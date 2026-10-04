@@ -498,3 +498,18 @@ mod tests {
         assert!((x[1] - 1.0).abs() < 1e-12);
     }
 }
+
+/// A STEP-worded description of a kernel geometry error (the kernel's
+/// own messages name the IFC entities it was first written for).
+pub fn describe(e: &GeometryError) -> String {
+    match e {
+        GeometryError::MissingInstance(id) => format!("reference to missing instance #{id}"),
+        GeometryError::Unsupported(what) => format!("unsupported: {what}"),
+        GeometryError::BadCoordinates => {
+            "malformed geometry or topology (the region could not be meshed)".into()
+        }
+        GeometryError::IndexOutOfRange => "index out of range or degenerate loop".into(),
+        GeometryError::BadCoordinate => "malformed coordinate or number".into(),
+        GeometryError::BadProfile => "malformed curve / surface definition".into(),
+    }
+}
