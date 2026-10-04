@@ -37,3 +37,7 @@ All notable changes to this project will be documented in this file.
   circle edges on an offset surface, `BREP_WITH_VOIDS`, faceted brep +
   open shell, nested assembly (parent-first relationship, cartesian-
   operator mapped item) — all watertight with exact volumes.
+- `StepEncoder` / `encode_scene`: AP242 tessellated writer (registered
+  under `"step"` for `.step` / `.stp` / `.p21`), round-trip tested.
+- Shell-level colours, per-face vertex split + normals in the scene,
+  `DEGENERATE_TOROIDAL_SURFACE`, STEP-worded warnings.

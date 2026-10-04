@@ -35,7 +35,9 @@
 //!
 //! With the default `registry` feature, [`StepDecoder`] maps the model
 //! onto an `oxideav_mesh3d::Scene3D` and [`register_mesh3d`] plugs it
-//! into the OxideAV 3D-format registry (`.step` / `.stp` / `.p21`).
+//! into the OxideAV 3D-format registry (`.step` / `.stp` / `.p21`);
+//! [`StepEncoder`] writes a scene back as AP242 tessellated geometry
+//! (parts instanced through an assembly, colours, units).
 //! Build with `default-features = false` for the std-only reader.
 //!
 //! Clean-room: implemented from the ISO 10303 public schemas, the
@@ -54,6 +56,8 @@ pub mod units;
 
 #[cfg(feature = "registry")]
 pub mod decoder;
+#[cfg(feature = "registry")]
+pub mod encoder;
 
 pub use error::{Error, Result};
 pub use geom::{GeometryLimits, Tolerance};
@@ -66,3 +70,5 @@ pub use style::Rgba;
 
 #[cfg(feature = "registry")]
 pub use decoder::{make_decoder, register_mesh3d, scene_from_model, StepDecoder};
+#[cfg(feature = "registry")]
+pub use encoder::{encode_scene, StepEncoder};

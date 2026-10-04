@@ -330,12 +330,18 @@ pub fn make_decoder() -> StepDecoder {
     StepDecoder::new()
 }
 
-/// Register the STEP decoder into a [`Mesh3DRegistry`] under format id
-/// `"step"` with the `.step` / `.stp` / `.p21` extensions.
+/// Register the STEP decoder and the AP242 tessellated writer into a
+/// [`Mesh3DRegistry`] under format id `"step"` with the `.step` /
+/// `.stp` / `.p21` extensions.
 pub fn register_mesh3d(registry: &mut Mesh3DRegistry) {
     registry.register_decoder(
         "step",
         &["step", "stp", "p21"],
         Box::new(|| Box::new(StepDecoder::new())),
+    );
+    registry.register_encoder(
+        "step",
+        &["step", "stp", "p21"],
+        Box::new(|| Box::new(crate::encoder::StepEncoder::new())),
     );
 }

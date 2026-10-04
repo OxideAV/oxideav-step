@@ -84,3 +84,30 @@ fn face_split_normals() {
         assert_eq!(axis, 1, "{n:?}");
     }
 }
+
+#[test]
+fn ap242_tessellated_round_trip() {
+    let mut reg = Mesh3DRegistry::new();
+    oxideav_step::register_mesh3d(&mut reg);
+    for name in ["assembly.stp", "plate_with_hole.stp", "revolved.stp"] {
+        let mut dec = reg.decoder_for_format("step").unwrap();
+        let scene = dec.decode(&bytes(name)).unwrap();
+        let mut enc = reg.encoder_for_extension("stp").unwrap();
+        let out = enc.encode(&scene).unwrap();
+        let again = reg
+            .decoder_for_format("step")
+            .unwrap()
+            .decode(&out)
+            .unwrap();
+        assert_eq!(again.unit, scene.unit, "{name}");
+        assert_eq!(again.triangle_count(), scene.triangle_count(), "{name}");
+        let (a, b) = (scene.world_volume(), again.world_volume());
+        assert!((a - b).abs() <= 1e-5 * a.abs(), "{name}: {a} vs {b}");
+        assert_eq!(again.materials.len(), scene.materials.len(), "{name}");
+        // Instancing survives: as many meshes as before.
+        assert_eq!(again.meshes.len(), scene.meshes.len(), "{name}");
+        let model = oxideav_step::read_step(&out).unwrap();
+        assert_eq!(model.schema, oxideav_step::ApSchema::Ap242);
+        assert!(model.warnings.is_empty(), "{name}: {:?}", model.warnings);
+    }
+}
