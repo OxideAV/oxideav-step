@@ -11,5 +11,29 @@ homepage = "https://github.com/OxideAV/oxideav-step"
 readme = "README.md"
 keywords = ["step", "iso-10303", "cad", "brep", "3d"]
 categories = ["multimedia", "rendering::data-formats", "parser-implementations"]
+# Fixture models and the fuzz crate stay out of the published package.
+exclude = ["/tests", "/fuzz"]
 
 [dependencies]
+# The ISO 10303-21 physical-file parser (complex entity instances
+# included) and the neutral ISO 10303-42 geometry kernel come from
+# oxideav-ifc's framework-free core.
+oxideav-ifc = { version = "0.0", default-features = false }
+# Framework deps sit behind the default-on `registry` feature so CAD
+# tooling can depend on `oxideav-step` with `default-features = false`
+# and get only the std-typed reader (`read_step` / `StepModel`).
+oxideav-core = { version = "0.1", optional = true }
+oxideav-mesh3d = { version = "0.0", optional = true, default-features = false }
+# Scene / node / primitive `extras` are `serde_json::Value` maps.
+serde_json = { version = "1", optional = true }
+
+[features]
+default = ["registry"]
+
+# `Mesh3DDecoder` implementation + `Mesh3DRegistry` registration helper.
+registry = [
+    "dep:oxideav-core",
+    "dep:oxideav-mesh3d",
+    "dep:serde_json",
+    "oxideav-mesh3d/registry",
+]
