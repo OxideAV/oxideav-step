@@ -114,7 +114,11 @@ fn ap242_tessellated_round_trip() {
 
 #[test]
 fn context_dependent_colour_overrides_one_occurrence() {
-    let text = String::from_utf8(bytes("assembly.stp")).unwrap();
+    // Normalise line endings: a Windows checkout (core.autocrlf) turns
+    // the fixture's LF into CRLF, which the text splicing below keys on.
+    let text = String::from_utf8(bytes("assembly.stp"))
+        .unwrap()
+        .replace("\r\n", "\n");
     let id_of = |pred: &dyn Fn(&str) -> bool, nth: usize| -> String {
         let line = text.lines().filter(|l| pred(l)).nth(nth).unwrap();
         line.split('=').next().unwrap().to_string()
