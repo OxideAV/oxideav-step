@@ -157,6 +157,10 @@ fn apply(m: &[[f32; 4]; 4], p: [f32; 3]) -> [f64; 3] {
     out
 }
 
+/// A written part: (product definition, shape representation, origin
+/// placement) instance names.
+type PartRefs = (String, String, String);
+
 const IDENTITY: [[f32; 4]; 4] = [
     [1.0, 0.0, 0.0, 0.0],
     [0.0, 1.0, 0.0, 0.0],
@@ -220,8 +224,8 @@ pub fn encode_scene(scene: &Scene3D) -> String {
     let mut styled: Vec<String> = Vec::new();
     // One part per (mesh, baked transform).
     let world = scene.world_node_transforms();
-    let mut parts: HashMap<(u32, Option<usize>), (String, String, String)> = HashMap::new();
-    let mut placements: Vec<(usize, (String, String, String), [[f32; 4]; 4])> = Vec::new();
+    let mut parts: HashMap<(u32, Option<usize>), PartRefs> = HashMap::new();
+    let mut placements: Vec<(usize, PartRefs, [[f32; 4]; 4])> = Vec::new();
     for (ni, node) in scene.nodes.iter().enumerate() {
         let (Some(mesh_id), Some(Some(m))) = (node.mesh, world.get(ni)) else {
             continue;
@@ -231,7 +235,7 @@ pub fn encode_scene(scene: &Scene3D) -> String {
         };
         let rigid_motion = rigid(m).is_some();
         let key = (mesh_id.0, (!rigid_motion).then_some(ni));
-        if !parts.contains_key(&key) {
+        if let std::collections::hash_map::Entry::Vacant(slot) = parts.entry(key) {
             let name = mesh
                 .name
                 .clone()
@@ -316,7 +320,7 @@ pub fn encode_scene(scene: &Scene3D) -> String {
                     "SHAPE_REPRESENTATION_RELATIONSHIP('','',{sr},{tsr})"
                 ));
             }
-            parts.insert(key, (pd, sr, origin));
+            slot.insert((pd, sr, origin));
         }
         let part = parts[&key].clone();
         let m = if rigid_motion { *m } else { IDENTITY };
