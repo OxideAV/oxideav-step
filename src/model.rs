@@ -528,6 +528,26 @@ impl<'a> Builder<'a> {
         Ok(idx)
     }
 
+    /// The colour of a solid's / surface model's shell when the style
+    /// targets the shell rather than the item.
+    fn shell_colour(&self, item: u64) -> Option<Rgba> {
+        let e = self.entity(item)?;
+        let mut shells: Vec<u64> = Vec::new();
+        if let Some(o) = e.reference("outer") {
+            shells.push(o);
+        }
+        for key in ["sbsm_boundary", "fbsm_faces"] {
+            for v in e.list(key).unwrap_or(&[]) {
+                if let Some(id) = v.as_reference() {
+                    shells.push(id);
+                }
+            }
+        }
+        shells
+            .iter()
+            .find_map(|s| self.styles.colour_of.get(s).copied())
+    }
+
     /// `(product id, product name)` of a product definition.
     fn product_of(&self, pd: u64) -> Option<(Option<String>, Option<String>)> {
         let pde = self.entity(pd)?;
@@ -744,7 +764,13 @@ impl<'a> Builder<'a> {
                     *p = crate::geom::scale(*p, factor);
                 }
             }
-            let colour = self.styles.colour_of.get(&item).copied().or(rep_colour);
+            let colour = self
+                .styles
+                .colour_of
+                .get(&item)
+                .copied()
+                .or_else(|| self.shell_colour(item))
+                .or(rep_colour);
             let mut triangle_colours = Vec::new();
             let face_styled = bm
                 .face_of_triangle

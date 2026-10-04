@@ -389,3 +389,24 @@ fn nested_assembly_placements() {
     );
     assert!(m.warnings.is_empty(), "{:?}", m.warnings);
 }
+
+#[test]
+fn colour_on_the_shell_applies_to_the_solid() {
+    let p = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cube.stp");
+    let text = std::fs::read_to_string(p).unwrap();
+    let id_of = |kw: &str| -> String {
+        let line = text.lines().find(|l| l.contains(kw)).unwrap();
+        line.split('=').next().unwrap().to_string()
+    };
+    let (shell, solid) = (id_of("=CLOSED_SHELL("), id_of("=MANIFOLD_SOLID_BREP("));
+    let styled = text
+        .lines()
+        .find(|l| l.contains("STYLED_ITEM("))
+        .unwrap()
+        .to_string();
+    let restyled = styled.replace(&format!(",{solid});"), &format!(",{shell});"));
+    assert_ne!(styled, restyled);
+    let text = text.replace(&styled, &restyled);
+    let m = read_step(text.as_bytes()).unwrap();
+    assert_eq!(single_shape(&m).colour, Some([0.8, 0.2, 0.2, 1.0]));
+}
