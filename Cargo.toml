@@ -1,0 +1,15 @@
+[package]
+name = "oxideav-step"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT"
+authors = ["Mark Karpeles"]
+description = "Pure-Rust STEP (ISO 10303-21 / AP242 / AP214 / AP203) B-rep CAD reader — tessellates to an oxideav-mesh3d Scene3D, reusing oxideav-ifc's physical-file and EXPRESS layers"
+repository = "https://github.com/OxideAV/oxideav-step"
+homepage = "https://github.com/OxideAV/oxideav-step"
+readme = "README.md"
+keywords = ["step", "iso-10303", "cad", "brep", "3d"]
+categories = ["multimedia", "rendering::data-formats", "parser-implementations"]
+
+[dependencies]
