@@ -67,6 +67,10 @@ pub struct Shape {
     /// Per-triangle colour overrides (face-level styling); empty when
     /// no face of the item is styled individually.
     pub triangle_colours: Vec<Option<Rgba>>,
+    /// The face (B-rep `face` or tessellated face / set) instance id of
+    /// each triangle — the smoothing groups for shading: normals vary
+    /// smoothly within a face and break across its edges.
+    pub triangle_faces: Vec<u64>,
     /// Presentation layers the item is assigned to.
     pub layers: Vec<String>,
 }
@@ -783,6 +787,7 @@ impl<'a> Builder<'a> {
                     .map(|f| self.styles.colour_of.get(f).copied())
                     .collect();
             }
+            let mut triangle_faces = bm.face_of_triangle.clone();
             if !self.opts.keep_invisible {
                 let hidden: Vec<bool> = bm
                     .face_of_triangle
@@ -792,9 +797,11 @@ impl<'a> Builder<'a> {
                 if hidden.iter().any(|&h| h) {
                     let mut tris = Vec::with_capacity(mesh.triangles.len());
                     let mut cols = Vec::new();
+                    let mut faces = Vec::new();
                     for (i, t) in mesh.triangles.iter().enumerate() {
                         if !hidden[i] {
                             tris.push(*t);
+                            faces.push(triangle_faces[i]);
                             if !triangle_colours.is_empty() {
                                 cols.push(triangle_colours[i]);
                             }
@@ -802,6 +809,7 @@ impl<'a> Builder<'a> {
                     }
                     mesh.triangles = tris;
                     triangle_colours = cols;
+                    triangle_faces = faces;
                 }
             }
             shapes.push(Shape {
@@ -813,6 +821,7 @@ impl<'a> Builder<'a> {
                 mesh,
                 colour,
                 triangle_colours,
+                triangle_faces,
                 layers: self.styles.layers.get(&item).cloned().unwrap_or_default(),
             });
         }

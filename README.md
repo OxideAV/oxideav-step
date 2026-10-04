@@ -27,7 +27,7 @@ parameter domain).
 | Tessellation | every edge sampled once and shared by both faces (watertight solids); faces trimmed in the surface `(u, v)` domain (seams, poles, cone apices); chordal-tolerance + angular density (`Tolerance`) |
 | AP242 tessellated | `TESSELLATED_SHAPE_REPRESENTATION`, `TESSELLATED_SOLID` / `TESSELLATED_SHELL`, `TRIANGULATED_FACE`, `COMPLEX_TRIANGULATED_FACE`, `TRIANGULATED_SURFACE_SET`, `COMPLEX_TRIANGULATED_SURFACE_SET`, `COORDINATES_LIST` |
 | Presentation | `STYLED_ITEM` / `OVER_RIDING_STYLED_ITEM` → `PRESENTATION_STYLE_ASSIGNMENT` → `SURFACE_STYLE_USAGE` → `SURFACE_SIDE_STYLE` → fill-area colour or `SURFACE_STYLE_RENDERING(_WITH_PROPERTIES)` + `SURFACE_STYLE_TRANSPARENT`; `COLOUR_RGB`, `DRAUGHTING_PRE_DEFINED_COLOUR`; solid / shell / face / representation targets; `INVISIBILITY`; layer names |
-| Scene3D | one mesh per part (shared by occurrences), one primitive per colour, deduplicated materials, occurrence nodes with matrices, `unit` (mm / cm / m / in / ft / yd, else metres), Z-up |
+| Scene3D | one mesh per part (shared by occurrences), one primitive per colour, vertices split per face with smooth-within-face normals, deduplicated materials, occurrence nodes with matrices, `unit` (mm / cm / m / in / ft / yd, else metres), Z-up |
 
 Not yet: PMI (semantic / graphical annotations), wireframe-only
 geometry (`GEOMETRIC_CURVE_SET`), CSG / swept solid primitives,

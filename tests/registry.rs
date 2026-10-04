@@ -70,3 +70,17 @@ fn non_step_input_is_rejected() {
     let mut dec = oxideav_step::make_decoder();
     assert!(oxideav_mesh3d::Mesh3DDecoder::decode(&mut dec, b"solid x\nendsolid x\n").is_err());
 }
+
+#[test]
+fn face_split_normals() {
+    let mut dec = oxideav_step::make_decoder();
+    let scene = oxideav_mesh3d::Mesh3DDecoder::decode(&mut dec, &bytes("cube.stp")).unwrap();
+    let prim = &scene.meshes[0].primitives[0];
+    // 6 faces × 4 corners, each with its face's axis-aligned normal.
+    assert_eq!(prim.positions.len(), 24);
+    let normals = prim.normals.as_ref().unwrap();
+    for n in normals {
+        let axis = n.iter().filter(|c| (c.abs() - 1.0).abs() < 1e-6).count();
+        assert_eq!(axis, 1, "{n:?}");
+    }
+}

@@ -6,7 +6,8 @@
 //!   shared by all the nodes that instance it (assembly occurrences);
 //!   each shape becomes one `Triangles` primitive per colour (face-level
 //!   colours split a shape), with a deduplicated [`Material`] per RGBA
-//!   (`AlphaMode::Blend` when transparent);
+//!   (`AlphaMode::Blend` when transparent), with vertices split per face
+//!   and area-weighted normals smooth within a face (hard face edges);
 //! * occurrences become nodes carrying the child → parent matrix, named
 //!   after the occurrence / product; the product id and definition land
 //!   in node extras (`step:product_id`, `step:product_definition`);
@@ -265,23 +266,52 @@ fn split_by_colour(shape: &crate::model::Shape, factor: f64) -> Vec<(Option<Rgba
     }
     let mut out = Vec::with_capacity(groups.len());
     for (c, tris) in groups {
-        let mut remap: HashMap<u32, u32> = HashMap::new();
+        // Vertices split per (position, face): normals are smooth within
+        // a face and break across face edges (CAD shading).
+        let mut remap: HashMap<(u32, u64), u32> = HashMap::new();
         let mut positions: Vec<[f32; 3]> = Vec::new();
+        let mut normals: Vec<[f64; 3]> = Vec::new();
         let mut indices: Vec<u32> = Vec::with_capacity(tris.len() * 3);
         for &t in &tris {
-            for &v in &mesh.triangles[t] {
-                let id = *remap.entry(v).or_insert_with(|| {
-                    let p = mesh.positions.get(v as usize).copied().unwrap_or_default();
+            let face = shape.triangle_faces.get(t).copied().unwrap_or(0);
+            let tri = mesh.triangles[t];
+            let p = tri.map(|v| mesh.positions.get(v as usize).copied().unwrap_or_default());
+            let e1 = [p[1][0] - p[0][0], p[1][1] - p[0][1], p[1][2] - p[0][2]];
+            let e2 = [p[2][0] - p[0][0], p[2][1] - p[0][1], p[2][2] - p[0][2]];
+            let n = [
+                e1[1] * e2[2] - e1[2] * e2[1],
+                e1[2] * e2[0] - e1[0] * e2[2],
+                e1[0] * e2[1] - e1[1] * e2[0],
+            ];
+            for (k, &v) in tri.iter().enumerate() {
+                let id = *remap.entry((v, face)).or_insert_with(|| {
+                    let q = p[k];
                     positions.push([
-                        (p[0] * factor) as f32,
-                        (p[1] * factor) as f32,
-                        (p[2] * factor) as f32,
+                        (q[0] * factor) as f32,
+                        (q[1] * factor) as f32,
+                        (q[2] * factor) as f32,
                     ]);
+                    normals.push([0.0; 3]);
                     (positions.len() - 1) as u32
                 });
+                let acc = &mut normals[id as usize];
+                for j in 0..3 {
+                    acc[j] += n[j];
+                }
                 indices.push(id);
             }
         }
+        let normals: Vec<[f32; 3]> = normals
+            .into_iter()
+            .map(|n| {
+                let l = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt();
+                if l > 0.0 && l.is_finite() {
+                    [(n[0] / l) as f32, (n[1] / l) as f32, (n[2] / l) as f32]
+                } else {
+                    [0.0, 0.0, 1.0]
+                }
+            })
+            .collect();
         let mut prim = Primitive::new(Topology::Triangles);
         prim.indices = Some(if positions.len() <= u16::MAX as usize + 1 {
             Indices::U16(indices.iter().map(|&i| i as u16).collect())
@@ -289,6 +319,7 @@ fn split_by_colour(shape: &crate::model::Shape, factor: f64) -> Vec<(Option<Rgba
             Indices::U32(indices)
         });
         prim.positions = positions;
+        prim.normals = Some(normals);
         out.push((c, prim));
     }
     out
