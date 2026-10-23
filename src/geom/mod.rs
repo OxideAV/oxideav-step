@@ -19,7 +19,7 @@ use std::rc::Rc;
 use oxideav_ifc::kernel::Surface;
 use oxideav_ifc::{GeometryError, StepFile, Transform, Value};
 
-use crate::schema::{number, Entity};
+use crate::schema::{Entity, number};
 use crate::units::ContextUnits;
 
 pub use curve::Curve;
@@ -494,11 +494,13 @@ mod tests {
         let p = [0.3, -4.0, 7.0];
         let q = i.apply(t.apply(p));
         assert!((0..3).all(|k| (p[k] - q[k]).abs() < 1e-12));
-        assert!(invert(&Transform {
-            cols: [[0.0; 3]; 3],
-            translation: [0.0; 3]
-        })
-        .is_none());
+        assert!(
+            invert(&Transform {
+                cols: [[0.0; 3]; 3],
+                translation: [0.0; 3]
+            })
+            .is_none()
+        );
     }
 
     #[test]

@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use oxideav_ifc::{GeometryError, TriMesh, Value};
 
 use super::brep::BrepMesh;
-use super::{coords3, GResult, Geo};
+use super::{GResult, Geo, coords3};
 use crate::schema::number;
 
 /// Accumulates tessellated items into one mesh.

@@ -43,10 +43,11 @@ fn registry_decodes_an_assembly_with_instancing() {
         .max();
     assert_eq!(shared, Some(2));
     // The rotated occurrence carries a matrix.
-    assert!(root
-        .children
-        .iter()
-        .any(|&c| matches!(scene.node(c).unwrap().transform, Transform::Matrix(_))));
+    assert!(
+        root.children
+            .iter()
+            .any(|&c| matches!(scene.node(c).unwrap().transform, Transform::Matrix(_)))
+    );
     assert!(scene.validate().is_ok(), "{:?}", scene.validate());
     // World volume: two 1000 mm³ cubes + a 1 in³ block.
     let v = scene.world_volume();

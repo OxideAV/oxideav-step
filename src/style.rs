@@ -17,7 +17,7 @@ use std::collections::{HashMap, HashSet};
 
 use oxideav_ifc::{StepFile, Value};
 
-use crate::schema::{number, Entity};
+use crate::schema::{Entity, number};
 
 /// An RGBA colour, components in `[0, 1]`.
 pub type Rgba = [f32; 4];
@@ -183,12 +183,11 @@ fn walk(step: &StepFile, v: &Value, depth: usize, found: &mut Option<[f32; 3]>, 
             *found = next("surface_colour").and_then(|c| colour(step, c, depth + 1));
         }
         for p in e.list("properties").unwrap_or(&[]) {
-            if let Some(pe) = p.as_reference().and_then(|id| Entity::get(step, id)) {
-                if pe.is_a("SURFACE_STYLE_TRANSPARENT") {
-                    if let Some(t) = pe.number("transparency") {
-                        *alpha = (1.0 - t as f32).clamp(0.0, 1.0);
-                    }
-                }
+            if let Some(pe) = p.as_reference().and_then(|id| Entity::get(step, id))
+                && pe.is_a("SURFACE_STYLE_TRANSPARENT")
+                && let Some(t) = pe.number("transparency")
+            {
+                *alpha = (1.0 - t as f32).clamp(0.0, 1.0);
             }
         }
     }

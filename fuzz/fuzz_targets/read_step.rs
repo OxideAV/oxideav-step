@@ -6,7 +6,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use oxideav_step::{read_step_with, GeometryLimits, ReadOptions, StepLimits, Tolerance};
+use oxideav_step::{GeometryLimits, ReadOptions, StepLimits, Tolerance, read_step_with};
 
 fuzz_target!(|data: &[u8]| {
     let opts = ReadOptions {

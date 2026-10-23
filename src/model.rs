@@ -28,16 +28,16 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 use oxideav_ifc::{
-    parse_step_with_limits, Header, StepFile, StepLimits, Transform, TriMesh, Value,
+    Header, StepFile, StepLimits, Transform, TriMesh, Value, parse_step_with_limits,
 };
 
 use crate::error::{Error, Result};
-use crate::geom::brep::{is_brep_item, BrepMesher};
-use crate::geom::tessellated::{is_tessellated_item, TessMesher};
-use crate::geom::{invert, rescale_translation, Geo, GeometryLimits, Tolerance};
+use crate::geom::brep::{BrepMesher, is_brep_item};
+use crate::geom::tessellated::{TessMesher, is_tessellated_item};
+use crate::geom::{Geo, GeometryLimits, Tolerance, invert, rescale_translation};
 use crate::schema::{ApSchema, Entity};
 use crate::style::{Rgba, Styles};
-use crate::units::{context_units, ContextUnits};
+use crate::units::{ContextUnits, context_units};
 
 /// Reader options.
 #[derive(Debug, Clone, Default)]
@@ -270,10 +270,10 @@ impl<'a> Builder<'a> {
         let mut pds_def: HashMap<u64, u64> = HashMap::new();
         for inst in step.instances.values() {
             let e = Entity { inst };
-            if e.is_a("PROPERTY_DEFINITION") {
-                if let Some(d) = e.reference("definition") {
-                    pds_def.insert(inst.id, d);
-                }
+            if e.is_a("PROPERTY_DEFINITION")
+                && let Some(d) = e.reference("definition")
+            {
+                pds_def.insert(inst.id, d);
             }
         }
         for inst in step.instances.values() {
@@ -418,10 +418,10 @@ impl<'a> Builder<'a> {
                     if let Some(r) = e.reference("mapped_representation") {
                         covered.insert(r);
                     }
-                } else if e.is_a("REPRESENTATION_RELATIONSHIP_WITH_TRANSFORMATION") {
-                    if let Some(r) = e.reference("rep_1") {
-                        covered.insert(r);
-                    }
+                } else if e.is_a("REPRESENTATION_RELATIONSHIP_WITH_TRANSFORMATION")
+                    && let Some(r) = e.reference("rep_1")
+                {
+                    covered.insert(r);
                 }
             }
             for r in reps {
@@ -666,11 +666,7 @@ impl<'a> Builder<'a> {
                 translation: t.translation,
             }
         };
-        if child_is_1 {
-            Some(t12)
-        } else {
-            invert(&t12)
-        }
+        if child_is_1 { Some(t12) } else { invert(&t12) }
     }
 
     /// The occurrence a `mapped_item` stands for.

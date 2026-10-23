@@ -26,7 +26,7 @@ use oxideav_mesh3d::{
 use serde_json::Value as Json;
 
 use crate::error::Error;
-use crate::model::{read_step_with, ReadOptions, StepModel};
+use crate::model::{ReadOptions, StepModel, read_step_with};
 use crate::style::Rgba;
 
 /// Largest number of scene nodes an assembly may expand into (shared

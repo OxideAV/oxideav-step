@@ -29,8 +29,8 @@ use std::collections::HashMap;
 use oxideav_ifc::kernel::FaceMesher;
 use oxideav_ifc::{GeometryError, TriMesh};
 
-use super::curve::{trimmed, Curve};
-use super::{cross, dist, dot, sub, surface, GResult, Geo};
+use super::curve::{Curve, trimmed};
+use super::{GResult, Geo, cross, dist, dot, sub, surface};
 
 /// Nesting bound for oriented-edge / subedge / oriented-face chains.
 const MAX_TOPO_DEPTH: usize = 16;
@@ -107,16 +107,16 @@ impl<'g, 'a> BrepMesher<'g, 'a> {
             let outer = e.reference("outer").ok_or(GeometryError::BadCoordinates)?;
             self.shell(outer, false, 0)?;
             self.orient_closed(start, true);
-            if e.is_a("BREP_WITH_VOIDS") {
-                if let Some(voids) = e.list("voids") {
-                    for v in voids {
-                        let Some(vid) = v.as_reference() else {
-                            continue;
-                        };
-                        let s = self.m.triangle_count();
-                        self.shell(vid, false, 0)?;
-                        self.orient_closed(s, false);
-                    }
+            if e.is_a("BREP_WITH_VOIDS")
+                && let Some(voids) = e.list("voids")
+            {
+                for v in voids {
+                    let Some(vid) = v.as_reference() else {
+                        continue;
+                    };
+                    let s = self.m.triangle_count();
+                    self.shell(vid, false, 0)?;
+                    self.orient_closed(s, false);
                 }
             }
             return Ok(());
@@ -349,10 +349,11 @@ impl<'g, 'a> BrepMesher<'g, 'a> {
                 let eid = ed.as_reference().ok_or(GeometryError::BadCoordinates)?;
                 let mut run = self.edge_run(eid, 0)?;
                 // Chain head-to-tail; tolerate an edge listed backwards.
-                if let Some(&last) = out.last() {
-                    if run.first() != Some(&last) && run.last() == Some(&last) {
-                        run.reverse();
-                    }
+                if let Some(&last) = out.last()
+                    && run.first() != Some(&last)
+                    && run.last() == Some(&last)
+                {
+                    run.reverse();
                 }
                 let skip = usize::from(out.last().is_some() && run.first() == out.last());
                 out.extend(run.into_iter().skip(skip));
@@ -478,14 +479,14 @@ impl<'g, 'a> BrepMesher<'g, 'a> {
                 .unwrap_or(true);
             return Ok((basis, same == agree));
         }
-        if g.is_a("SURFACE_CURVE") {
-            if let Some(c3) = g.reference("curve_3d") {
-                let c3e = self.geo.entity(c3)?;
-                if !c3e.is_a("PCURVE") {
-                    if let Ok(r) = self.edge_curve(c3, same, depth + 1) {
-                        return Ok(r);
-                    }
-                }
+        if g.is_a("SURFACE_CURVE")
+            && let Some(c3) = g.reference("curve_3d")
+        {
+            let c3e = self.geo.entity(c3)?;
+            if !c3e.is_a("PCURVE")
+                && let Ok(r) = self.edge_curve(c3, same, depth + 1)
+            {
+                return Ok(r);
             }
         }
         let c = self.geo.curve(gid)?;

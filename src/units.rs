@@ -15,7 +15,7 @@
 
 use oxideav_ifc::{StepFile, Value};
 
-use crate::schema::{number, Entity};
+use crate::schema::{Entity, number};
 
 /// Resolved units of one representation context.
 #[derive(Debug, Clone, Copy, PartialEq)]

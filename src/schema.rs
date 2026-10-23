@@ -855,10 +855,10 @@ impl<'a> Entity<'a> {
             return inst.args.get(idx);
         }
         for part in &inst.parts {
-            if let Some(def) = entity_def(&part.keyword) {
-                if let Some(i) = def.attrs.iter().position(|a| *a == name) {
-                    return part.args.get(i);
-                }
+            if let Some(def) = entity_def(&part.keyword)
+                && let Some(i) = def.attrs.iter().position(|a| *a == name)
+            {
+                return part.args.get(i);
             }
         }
         None

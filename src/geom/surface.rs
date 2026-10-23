@@ -19,8 +19,8 @@
 use oxideav_ifc::kernel::{BSplineSurface, Surface};
 use oxideav_ifc::{GeometryError, Transform};
 
-use super::curve::{int_list, real_list, Conic, Curve};
-use super::{add, apply_dir, cross, dot, normalise, scale, sub, GResult, Geo};
+use super::curve::{Conic, Curve, int_list, real_list};
+use super::{GResult, Geo, add, apply_dir, cross, dot, normalise, scale, sub};
 use crate::schema::Entity;
 
 const MAX_SURFACE_DEPTH: usize = 16;
@@ -377,7 +377,7 @@ fn bspline_surface(geo: &Geo<'_>, e: Entity<'_>) -> GResult<Surface> {
 }
 
 fn bezier_knots(degree: usize, n: usize) -> GResult<(Vec<f64>, Vec<usize>)> {
-    if n < degree + 1 || (n - 1) % degree != 0 {
+    if n < degree + 1 || !(n - 1).is_multiple_of(degree) {
         return Err(GeometryError::BadProfile);
     }
     let spans = (n - 1) / degree;

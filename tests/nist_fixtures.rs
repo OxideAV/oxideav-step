@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use oxideav_step::{read_step, StepModel, TriMesh};
+use oxideav_step::{StepModel, TriMesh, read_step};
 
 fn fixture(name: &str) -> Option<Vec<u8>> {
     let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

@@ -62,14 +62,14 @@ pub mod encoder;
 pub use error::{Error, Result};
 pub use geom::{GeometryLimits, Tolerance};
 pub use model::{
-    model_from_file, read_step, read_step_with, Occurrence, OccurrenceColour, Part, ReadOptions,
-    Shape, StepModel,
+    Occurrence, OccurrenceColour, Part, ReadOptions, Shape, StepModel, model_from_file, read_step,
+    read_step_with,
 };
 pub use oxideav_ifc::{Header, StepFile, StepLimits, Transform, TriMesh};
 pub use schema::ApSchema;
 pub use style::Rgba;
 
 #[cfg(feature = "registry")]
-pub use decoder::{make_decoder, register_mesh3d, scene_from_model, StepDecoder};
+pub use decoder::{StepDecoder, make_decoder, register_mesh3d, scene_from_model};
 #[cfg(feature = "registry")]
-pub use encoder::{encode_scene, StepEncoder};
+pub use encoder::{StepEncoder, encode_scene};

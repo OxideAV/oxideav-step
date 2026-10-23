@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use oxideav_step::{read_step, ApSchema, Occurrence, StepModel, Transform, TriMesh};
+use oxideav_step::{ApSchema, Occurrence, StepModel, Transform, TriMesh, read_step};
 
 fn load(name: &str) -> StepModel {
     let p = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -202,7 +202,7 @@ fn assembly_occurrences_and_units() {
     assert_eq!(placed.len(), 3);
     let mut boxes: Vec<(String, Bounds)> =
         placed.iter().map(|(n, p)| (n.clone(), bbox(p))).collect();
-    boxes.sort_by(|a, b| a.1 .0.partial_cmp(&b.1 .0).unwrap());
+    boxes.sort_by(|a, b| a.1.0.partial_cmp(&b.1.0).unwrap());
     let near = |a: [f64; 3], b: [f64; 3]| (0..3).all(|k| (a[k] - b[k]).abs() < 1e-6);
     // Cube 1 at the origin.
     assert!(

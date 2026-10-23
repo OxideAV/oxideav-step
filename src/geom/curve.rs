@@ -22,7 +22,7 @@ use std::rc::Rc;
 use oxideav_ifc::kernel::{BSplineCurve, Surface};
 use oxideav_ifc::{GeometryError, Transform, Value};
 
-use super::{add, coords3, cross, dist, dot, normalise, scale, sub, GResult, Geo};
+use super::{GResult, Geo, add, coords3, cross, dist, dot, normalise, scale, sub};
 use crate::schema::{logical, number};
 
 /// Recursion bound for curve definitions referring to other curves.
@@ -458,11 +458,7 @@ fn nearest_param(c: &Curve, p: [f64; 3], seeds: &[f64], domain: (f64, f64)) -> f
     }
     let t = 0.5 * (a + b);
     // Keep the seed if refinement went nowhere better.
-    if f(t) <= bd {
-        t
-    } else {
-        seeds[best]
-    }
+    if f(t) <= bd { t } else { seeds[best] }
 }
 
 fn to_local(frame: &Transform, p: [f64; 3]) -> [f64; 3] {
@@ -538,10 +534,10 @@ pub(super) fn resolve(geo: &mut Geo<'_>, id: u64, depth: usize) -> GResult<Curve
                 Err(err) => {
                     if let Some(assoc) = e.list("associated_geometry") {
                         for a in assoc {
-                            if let Some(aid) = a.as_reference() {
-                                if let Ok(c) = resolve(geo, aid, depth + 1) {
-                                    return Ok(c);
-                                }
+                            if let Some(aid) = a.as_reference()
+                                && let Ok(c) = resolve(geo, aid, depth + 1)
+                            {
+                                return Ok(c);
                             }
                         }
                     }
@@ -597,10 +593,10 @@ pub(super) fn resolve(geo: &mut Geo<'_>, id: u64, depth: usize) -> GResult<Curve
                 run.reverse();
             }
             // Chain head-to-tail (tolerate a segment authored backwards).
-            if let (Some(&last), Some(&first), Some(&end)) = (pts.last(), run.first(), run.last()) {
-                if dist(last, end) < dist(last, first) {
-                    run.reverse();
-                }
+            if let (Some(&last), Some(&first), Some(&end)) = (pts.last(), run.first(), run.last())
+                && dist(last, end) < dist(last, first)
+            {
+                run.reverse();
             }
             for p in run {
                 if pts.last() != Some(&p) {
