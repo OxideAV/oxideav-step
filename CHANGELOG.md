@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.2](https://github.com/OxideAV/oxideav-step/compare/v0.0.1...v0.0.2) - 2026-11-07
+
+### Other
+
+- API hygiene: non_exhaustive model/option records, hide internal geometry/schema layers
+- edition 2024, MSRV 1.95
+
 ### Changed
 
 - API hygiene: `Error`, `ApSchema`, `ReadOptions`, `Tolerance`, `GeometryLimits`, `StepModel`, `Part`, `Shape`, `Occurrence` and `OccurrenceColour` are now `#[non_exhaustive]`. Build the option records with `Default` + `with_*`.
