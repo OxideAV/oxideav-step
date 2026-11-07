@@ -29,6 +29,7 @@ pub type GResult<T> = Result<T, GeometryError>;
 
 /// Tessellation density controls.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub struct Tolerance {
     /// Largest distance between a mesh edge and the exact curve /
     /// surface, as a fraction of the representation's bounding-box
@@ -38,6 +39,29 @@ pub struct Tolerance {
     pub absolute: Option<f64>,
     /// Largest turning angle of a curve per mesh edge, radians.
     pub max_angle: f64,
+}
+
+impl Tolerance {
+    /// Set [`Self::relative`].
+    #[must_use]
+    pub fn with_relative(mut self, v: f64) -> Self {
+        self.relative = v;
+        self
+    }
+
+    /// Set [`Self::absolute`].
+    #[must_use]
+    pub fn with_absolute(mut self, v: Option<f64>) -> Self {
+        self.absolute = v;
+        self
+    }
+
+    /// Set [`Self::max_angle`].
+    #[must_use]
+    pub fn with_max_angle(mut self, v: f64) -> Self {
+        self.max_angle = v;
+        self
+    }
 }
 
 impl Default for Tolerance {
@@ -52,11 +76,28 @@ impl Default for Tolerance {
 
 /// Hard caps on what one model may make the tessellator produce.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct GeometryLimits {
     /// Total triangles across the whole model.
     pub max_triangles: usize,
     /// Samples one curve run may produce.
     pub max_curve_samples: usize,
+}
+
+impl GeometryLimits {
+    /// Set [`Self::max_triangles`].
+    #[must_use]
+    pub fn with_max_triangles(mut self, v: usize) -> Self {
+        self.max_triangles = v;
+        self
+    }
+
+    /// Set [`Self::max_curve_samples`].
+    #[must_use]
+    pub fn with_max_curve_samples(mut self, v: usize) -> Self {
+        self.max_curve_samples = v;
+        self
+    }
 }
 
 impl Default for GeometryLimits {

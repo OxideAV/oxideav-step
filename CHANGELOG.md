@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- API hygiene: `Error`, `ApSchema`, `ReadOptions`, `Tolerance`, `GeometryLimits`, `StepModel`, `Part`, `Shape`, `Occurrence` and `OccurrenceColour` are now `#[non_exhaustive]`. Build the option records with `Default` + `with_*`.
+- API hygiene: the internal layers `geom` (curve / surface / B-rep meshers, vector helpers), `schema` (EXPRESS entity table), `units` and `style` are now `#[doc(hidden)]`. They stay `pub` for tests and fuzzing. Their caller-facing types (`Tolerance`, `GeometryLimits`, `ApSchema`, `Rgba`) are still re-exported at the crate root.
+
+### Added
+
+- `ReadOptions::with_parse_limits` / `with_geometry_limits` / `with_tolerance` / `with_keep_invisible`, `Tolerance::with_relative` / `with_absolute` / `with_max_angle`, `GeometryLimits::with_max_triangles` / `with_max_curve_samples`.
+
+### Changed
+
 - edition 2024, MSRV 1.95
 
 ## [0.0.1](https://github.com/OxideAV/oxideav-step/compare/v0.0.0...v0.0.1) - 2026-10-04

@@ -16,18 +16,18 @@
 //!
 //! * **Physical file** — `oxideav-ifc`'s clean-room ISO 10303-21 parser
 //!   (complex / external-mapping instances included).
-//! * [`schema`] — EXPRESS typing: the AP entity slice this reader uses,
+//! * `schema` — EXPRESS typing: the AP entity slice this reader uses,
 //!   transcribed from the AP242 long form (cross-checked against the
 //!   AP242 / AP214 / AP203 schemas), resolving attributes by name under
 //!   both the internal and the external mapping; [`ApSchema`] detection.
-//! * [`units`] — SI / conversion-based length and plane-angle units of a
+//! * `units` — SI / conversion-based length and plane-angle units of a
 //!   representation context.
-//! * [`geom`] — ISO 10303-42 curves, surfaces and topology meshed
+//! * `geom` — ISO 10303-42 curves, surfaces and topology meshed
 //!   through the neutral kernel `oxideav_ifc::kernel` (trimmed-face
 //!   tessellation in the surface parameter domain, shared edge sampling
 //!   for watertight solids, chordal-tolerance density), and AP242
 //!   tessellated geometry.
-//! * [`style`] — colours / transparency / invisibility / layers.
+//! * `style` — colours / transparency / invisibility / layers.
 //! * [`model`] — products, shape representations, assembly occurrences
 //!   (`next_assembly_usage_occurrence` + context-dependent shape
 //!   representations, `mapped_item`s), unit harmonisation →
@@ -48,10 +48,18 @@
 #![deny(missing_docs)]
 
 pub mod error;
+// internal — exposed for tests/fuzz; not part of the stable API
+#[doc(hidden)]
 pub mod geom;
 pub mod model;
+// internal — exposed for tests/fuzz; not part of the stable API
+#[doc(hidden)]
 pub mod schema;
+// internal — exposed for tests/fuzz; not part of the stable API
+#[doc(hidden)]
 pub mod style;
+// internal — exposed for tests/fuzz; not part of the stable API
+#[doc(hidden)]
 pub mod units;
 
 #[cfg(feature = "registry")]

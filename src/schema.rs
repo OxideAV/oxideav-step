@@ -25,6 +25,7 @@ use oxideav_ifc::{ParsedInstance, StepFile, Value};
 
 /// The STEP application protocol a file declares in `FILE_SCHEMA`.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ApSchema {
     /// AP203 edition 1 — `CONFIG_CONTROL_DESIGN`.
     Ap203,

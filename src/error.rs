@@ -8,6 +8,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 /// Why a STEP exchange structure could not be read.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
     /// The bytes are not an ISO 10303-21 exchange structure, or its
     /// syntax is malformed (wraps the physical-file parser's error).

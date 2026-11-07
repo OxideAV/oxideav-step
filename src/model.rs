@@ -41,6 +41,7 @@ use crate::units::{ContextUnits, context_units};
 
 /// Reader options.
 #[derive(Debug, Clone, Default)]
+#[non_exhaustive]
 pub struct ReadOptions {
     /// Physical-file parser caps.
     pub parse_limits: StepLimits,
@@ -53,8 +54,39 @@ pub struct ReadOptions {
     pub keep_invisible: bool,
 }
 
+impl ReadOptions {
+    /// Set [`Self::parse_limits`].
+    #[must_use]
+    pub fn with_parse_limits(mut self, v: StepLimits) -> Self {
+        self.parse_limits = v;
+        self
+    }
+
+    /// Set [`Self::geometry_limits`].
+    #[must_use]
+    pub fn with_geometry_limits(mut self, v: GeometryLimits) -> Self {
+        self.geometry_limits = v;
+        self
+    }
+
+    /// Set [`Self::tolerance`].
+    #[must_use]
+    pub fn with_tolerance(mut self, v: Tolerance) -> Self {
+        self.tolerance = v;
+        self
+    }
+
+    /// Set [`Self::keep_invisible`].
+    #[must_use]
+    pub fn with_keep_invisible(mut self, v: bool) -> Self {
+        self.keep_invisible = v;
+        self
+    }
+}
+
 /// A tessellated representation item.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct Shape {
     /// The representation item id (solid, shell, face set, …).
     pub item: u64,
@@ -77,6 +109,7 @@ pub struct Shape {
 
 /// A placed use of a part inside another (or at the top level).
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct Occurrence {
     /// Index into [`StepModel::parts`].
     pub part: usize,
@@ -96,6 +129,7 @@ pub struct Occurrence {
 /// A colour that applies to an item only in one assembly occurrence
 /// (`context_dependent_over_riding_styled_item`).
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub struct OccurrenceColour {
     /// The occurrence path from the root down: per level the
     /// [`Occurrence::placed_by`] relationship / mapped item or the
@@ -110,6 +144,7 @@ pub struct OccurrenceColour {
 /// A product definition (or a stand-alone representation) with its
 /// geometry and sub-occurrences.
 #[derive(Debug, Clone, Default)]
+#[non_exhaustive]
 pub struct Part {
     /// Product name.
     pub name: Option<String>,
@@ -127,6 +162,7 @@ pub struct Part {
 
 /// A read STEP model.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct StepModel {
     /// The application protocol the file declares.
     pub schema: ApSchema,
